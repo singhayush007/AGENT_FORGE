@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  output   = "../shared/lib/generated/prisma"
 }
 
 datasource db {
@@ -67,6 +67,9 @@ model Agent {
   starterPrompts  Json     @default("[]")
   draftDefinition Json
   canvas          Json     @default("{}")
+  pinned          Boolean  @default(false)
+  // Set when the owner turns on the public link (/share/<shareId>).
+  shareId         String?  @unique
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
