@@ -4,7 +4,7 @@ import { getSessionCookie } from "better-auth/cookies";
 // A quick cookie check so signed-out users go straight to /login.
 // The real session check still happens on the server in requireAuth().
 function isProtected(path: string) {
-  return path === "/" || path.startsWith("/agents");
+  return path.startsWith("/agents") || path.startsWith("/analytics");
 }
 
 export function proxy(request: NextRequest) {

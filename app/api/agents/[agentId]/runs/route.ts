@@ -1,28 +1,35 @@
 import { headers } from "next/headers";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
-import type { Prisma } from "@/lib/generated/prisma/client";
-import { auth } from "@/lib/auth";
-import { runAgentStream } from "@/modules/runtime/lib/run-agent";
-import { builderDefinitionSchema } from "@/modules/workflows/lib/schema";
-import { loadBuilderDefinition } from "@/modules/workflows/lib/migrate-v1";
+import { prisma } from "@/shared/lib/db";
+import type { Prisma } from "@/shared/lib/generated/prisma/client";
+import { auth } from "@/shared/lib/auth";
+import { runAgentStream } from "@/features/runtime/services/runAgent.service";
+import { builderDefinitionSchema } from "@/shared/types/workflow.types";
+import { toFriendlyError } from "@/features/runtime/util/friendlyError.utils";
+import { loadBuilderDefinition } from "@/shared/utils/workflowMigrate.utils";
 
 // What the chat panel sends us. `definition` is the (maybe unsaved) canvas.
 // If it is missing we fall back to the agent's saved draft.
+function jsonError(message: string, status: number) {
+  return Response.json({ error: message }, { status });
+}
+
 const runRequestSchema = z.object({
   message: z.string().trim().min(1, "Message cannot be empty"),
   conversationId: z.string().optional(),
+  // Re-run the last user message and replace the last assistant reply.
+  regenerate: z.boolean().optional(),
   definition: builderDefinitionSchema.optional(),
 });
 
-export async function POST(
+async function handle(
   req: Request,
   { params }: { params: Promise<{ agentId: string }> },
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return jsonError("Your session expired. Please sign in again.", 401);
   }
 
   const { agentId } = await params;
@@ -30,19 +37,18 @@ export async function POST(
   const parsed = runRequestSchema.safeParse(await req.json().catch(() => null));
 
   if (!parsed.success) {
-    return new Response(parsed.error.issues[0]?.message ?? "Invalid request", {
-      status: 400,
-    });
+    return jsonError(parsed.error.issues[0]?.message ?? "Invalid request", 400);
   }
 
-  const { message, conversationId } = parsed.data;
+  const { conversationId, regenerate } = parsed.data;
+  let message = parsed.data.message;
 
   const agent = await prisma.agent.findFirst({
     where: { id: agentId, userId: session.user.id },
   });
 
   if (!agent) {
-    return new Response("Not found", { status: 404 });
+    return jsonError("This agent no longer exists.", 404);
   }
 
   const definition =
@@ -68,7 +74,34 @@ export async function POST(
 
   const conversationIdToUse = conversation.id;
 
-  const history = conversation.messages.map((m) => ({
+  let priorMessages = conversation.messages;
+
+  if (regenerate) {
+    const last = priorMessages[priorMessages.length - 1];
+    const beforeLast = priorMessages[priorMessages.length - 2];
+
+    // Normal case: [user, assistant]. Failed run: the list ends with the user message.
+    const dropIds: string[] = [];
+    let userMsg: (typeof priorMessages)[number] | undefined;
+
+    if (last?.role === "assistant" && beforeLast?.role === "user") {
+      dropIds.push(last.id, beforeLast.id);
+      userMsg = beforeLast;
+    } else if (last?.role === "user") {
+      dropIds.push(last.id);
+      userMsg = last;
+    }
+
+    if (!userMsg) {
+      return jsonError("Nothing to regenerate yet.", 400);
+    }
+
+    await prisma.message.deleteMany({ where: { id: { in: dropIds } } });
+    message = userMsg.content;
+    priorMessages = priorMessages.filter((m) => !dropIds.includes(m.id));
+  }
+
+  const history = priorMessages.map((m) => ({
     role: m.role,
     content: m.content,
   }));
@@ -87,7 +120,12 @@ export async function POST(
   const stream = new ReadableStream({
     async start(controller) {
       function send(data: unknown) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        // The browser may have closed the stream (Stop button / tab closed).
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // ignore: nobody is listening anymore
+        }
       }
 
       try {
@@ -118,11 +156,15 @@ export async function POST(
 
         send({ type: "run_completed", conversationId: conversationIdToUse });
       } catch (err) {
-        const error = err instanceof Error ? err.message : "Run failed";
+        const error = toFriendlyError(err);
         send({ type: "run_failed", error, conversationId: conversationIdToUse });
       }
 
-      controller.close();
+      try {
+        controller.close();
+      } catch {
+        // already closed
+      }
     },
   });
 
@@ -133,4 +175,17 @@ export async function POST(
       Connection: "keep-alive",
     },
   });
+}
+
+export async function POST(
+  req: Request,
+  ctx: { params: Promise<{ agentId: string }> },
+) {
+  try {
+    return await handle(req, ctx);
+  } catch (err) {
+    // Database or other unexpected failures before the stream starts.
+    console.error("[runs route]", err);
+    return jsonError("The server hit a problem. Please try again.", 500);
+  }
 }

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, DM_Sans, Outfit } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
-import { Provider } from "@/components/providers/provider";
-import { Toaster } from "@/components/ui/toast";
+import "@/app/globals.css";
+import { cn } from "@/shared/lib/utils";
+import { Provider } from "@/shared/providers/Provider";
+import { Toaster } from "@/shared/components/ui/toast";
 
 const outfitHeading = Outfit({
   subsets: ["latin"],
@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agent Builder",
+  title: "AgentForge",
   description: "Build, test, and run AI agents with a visual workflow builder.",
 };
 
