@@ -219,7 +219,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {t.switchText}{" "}
         <Link
           href={t.switchHref}
-          className="font-medium text-primary underline-offset-4 hover:underline"
+          className="font-medium text-brand underline-offset-4 hover:underline"
         >
           {t.switchLabel}
         </Link>

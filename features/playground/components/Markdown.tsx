@@ -17,7 +17,7 @@ export function Markdown({ children }: { children: string }) {
         h3: (props) => <h3 className="mb-1 mt-3 text-sm font-semibold first:mt-0" {...props} />,
         a: (props) => (
           <a
-            className="font-medium text-primary underline underline-offset-2"
+            className="font-medium text-brand underline underline-offset-2"
             target="_blank"
             rel="noreferrer noopener"
             {...props}

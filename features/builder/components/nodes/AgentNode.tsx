@@ -14,13 +14,13 @@ export function AgentNode({ id, data }: NodeProps) {
   const tools = (data.tools as ToolEntry[] | undefined) ?? [];
 
   return (
-    <div className="min-w-[200px] max-w-[260px] rounded-2xl border border-primary/40 bg-card px-4 py-3.5 shadow-lg shadow-primary/10 ring-1 ring-primary/10">
+    <div className="min-w-[200px] max-w-[260px] rounded-2xl border border-brand/40 bg-card px-4 py-3.5 shadow-lg shadow-brand/10 ring-1 ring-brand/10">
       <Handle type="target" position={Position.Top} id="top" />
       <Handle type="target" position={Position.Left} id="left" />
       <Handle type="target" position={Position.Right} id="right" />
       <Handle type="source" position={Position.Bottom} id="bottom" />
       <div className="flex items-center gap-2.5">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-brand/10">
           <AppIcon name="bot" className="size-4" />
         </span>
         <div>

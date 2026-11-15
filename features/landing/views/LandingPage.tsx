@@ -232,7 +232,7 @@ export function LandingPage({ signedIn }: { signedIn: boolean }) {
       {/* grid + glow backdrop */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] [background-image:linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_70%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] [background-image:radial-gradient(var(--border)_1.2px,transparent_1.2px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_at_top,black_35%,transparent_75%)]"
       />
 
       {/* Nav */}
