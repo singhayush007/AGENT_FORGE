@@ -124,6 +124,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           <Button
             variant="ghost"
             size="icon"
+            className="max-sm:size-8"
             aria-label="Back to agents"
             nativeButton={false}
             render={
@@ -139,7 +140,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
           </Button>
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-xl ring-1 ring-primary/10 sm:size-10">
+          <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-xl ring-1 ring-primary/10 sm:flex sm:size-10">
             {agent.icon}
           </span>
           <div className="min-w-0">
@@ -158,21 +159,21 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Button variant="outline" size="sm" onClick={() => setToolsOpen(true)} aria-label="Tools">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <Button variant="outline" size="sm" className="max-sm:px-2" onClick={() => setToolsOpen(true)} aria-label="Tools">
             <HugeiconsIcon icon={ToolsIcon} strokeWidth={2} />
             <span className="hidden sm:inline">Tools</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)} aria-label="Settings">
+          <Button variant="outline" size="sm" className="max-sm:px-2" onClick={() => setSettingsOpen(true)} aria-label="Settings">
             <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
             <span className="hidden sm:inline">Settings</span>
           </Button>
           <ShareDialog agentId={agent.id} />
-          <Button variant="outline" size="sm" onClick={() => setChatOpen(true)} aria-label="Test chat">
+          <Button variant="outline" size="sm" className="max-sm:px-2" onClick={() => setChatOpen(true)} aria-label="Test chat">
             <HugeiconsIcon icon={Message01Icon} strokeWidth={2} />
             <span className="hidden sm:inline">Test chat</span>
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saveAgent.isPending || !hasUnsavedChanges}>
+          <Button size="sm" className="max-sm:px-2" onClick={handleSave} disabled={saveAgent.isPending || !hasUnsavedChanges}>
             {saveAgent.isPending ? <Spinner /> : <HugeiconsIcon icon={FloppyDiskIcon} strokeWidth={2} />}
             <span className="hidden sm:inline">{saveAgent.isPending ? "Saving..." : "Save"}</span>
           </Button>

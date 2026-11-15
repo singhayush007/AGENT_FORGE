@@ -47,7 +47,7 @@ export function ShareDialog({ agentId }: { agentId: string }) {
 
   return (
     <>
-      <Button variant="outline" size="sm" aria-label="Share" onClick={() => setOpen(true)}>
+      <Button variant="outline" size="sm" className="max-sm:px-2" aria-label="Share" onClick={() => setOpen(true)}>
         <HugeiconsIcon icon={Share08Icon} strokeWidth={2} />
         <span className="hidden sm:inline">Share</span>
       </Button>

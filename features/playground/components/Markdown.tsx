@@ -45,12 +45,12 @@ export function Markdown({ children }: { children: string }) {
           </code>
         ),
         table: (props) => (
-          <div className="my-3 overflow-x-auto">
+          <div className="my-3 max-w-full overflow-x-auto overscroll-x-contain pb-1">
             <table className="w-full border-collapse text-xs" {...props} />
           </div>
         ),
-        th: (props) => <th className="border border-border bg-background px-2 py-1 text-left font-medium" {...props} />,
-        td: (props) => <td className="border border-border px-2 py-1" {...props} />,
+        th: (props) => <th className="border border-border bg-background px-2 py-1 text-left align-top font-medium" {...props} />,
+        td: (props) => <td className="border border-border px-2 py-1 align-top [&_code]:whitespace-nowrap" {...props} />,
       }}
     >
       {children}

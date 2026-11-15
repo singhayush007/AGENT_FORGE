@@ -33,6 +33,72 @@ export type ChatMessage = {
   isError?: boolean;
 };
 
+// One row per tool call, each expandable to show its input and output.
+function ToolCallList({ tools }: { tools: ToolStatus[] }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+                    {tools.map((t, j) => (
+                      <details
+                        key={j}
+                        className="group/tool max-w-full rounded-xl border border-border bg-card text-xs open:shadow-sm"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-1.5 text-muted-foreground [&::-webkit-details-marker]:hidden">
+                          {t.status === "running" ? (
+                            <Spinner className="size-3" />
+                          ) : (
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3 text-emerald-500" />
+                          )}
+                          <span className="font-medium text-foreground">{getToolLabel(t.tool)}</span>
+                          {(t.input !== undefined || t.output) && (
+                            <span className="ml-auto text-[10px] group-open/tool:hidden">details</span>
+                          )}
+                        </summary>
+                        <div className="space-y-2 border-t border-border px-2.5 py-2">
+                          {t.input !== undefined && (
+                            <div>
+                              <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Input</p>
+                              <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-2 font-mono text-[11px]">
+                                {JSON.stringify(t.input, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                          {t.output && (
+                            <div>
+                              <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Output</p>
+                              <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-2 font-mono text-[11px]">
+                                {t.output.length > 1500 ? t.output.slice(0, 1500) + "…" : t.output}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+  );
+}
+
+// Three or more calls would fill a phone screen, so once the answer is done they collapse into one line.
+function ToolCalls({ tools, running }: { tools: ToolStatus[]; running: boolean }) {
+  if (tools.length <= 2 || running) return <ToolCallList tools={tools} />;
+
+  const names = [...new Set(tools.map((t) => getToolLabel(t.tool)))];
+  return (
+    <details className="group/all max-w-full rounded-xl border border-border bg-card text-xs">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-1.5 text-muted-foreground [&::-webkit-details-marker]:hidden">
+        <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3 shrink-0 text-emerald-500" />
+        <span className="min-w-0 truncate">
+          <span className="font-medium text-foreground">Used {tools.length} tool calls</span>
+          <span className="hidden sm:inline"> · {names.join(", ")}</span>
+        </span>
+        <span className="ml-auto shrink-0 text-[10px] group-open/all:hidden">show</span>
+      </summary>
+      <div className="border-t border-border p-2">
+        <ToolCallList tools={tools} />
+      </div>
+    </details>
+  );
+}
+
 export function ChatPanel({
   agentId,
   welcomeMessage,
@@ -235,50 +301,18 @@ export function ChatPanel({
                   <HugeiconsIcon icon={BotIcon} strokeWidth={2} className="size-4" />
                 </span>
               )}
-              <div className={cn("flex max-w-[85%] flex-col gap-2 sm:max-w-[75%]", isUser && "items-end")}>
+              <div
+                className={cn(
+                  "flex min-w-0 flex-col gap-2",
+                  isUser ? "max-w-[85%] items-end sm:max-w-[75%]" : "max-w-full sm:max-w-[75%]"
+                )}
+              >
                 {msg.tools && msg.tools.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
-                    {msg.tools.map((t, j) => (
-                      <details
-                        key={j}
-                        className="group/tool max-w-full rounded-xl border border-border bg-card text-xs open:shadow-sm"
-                      >
-                        <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-1.5 text-muted-foreground [&::-webkit-details-marker]:hidden">
-                          {t.status === "running" ? (
-                            <Spinner className="size-3" />
-                          ) : (
-                            <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3 text-emerald-500" />
-                          )}
-                          <span className="font-medium text-foreground">{getToolLabel(t.tool)}</span>
-                          {(t.input !== undefined || t.output) && (
-                            <span className="ml-auto text-[10px] group-open/tool:hidden">details</span>
-                          )}
-                        </summary>
-                        <div className="space-y-2 border-t border-border px-2.5 py-2">
-                          {t.input !== undefined && (
-                            <div>
-                              <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Input</p>
-                              <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-2 font-mono text-[11px]">
-                                {JSON.stringify(t.input, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                          {t.output && (
-                            <div>
-                              <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Output</p>
-                              <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-2 font-mono text-[11px]">
-                                {t.output.length > 1500 ? t.output.slice(0, 1500) + "…" : t.output}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
-                      </details>
-                    ))}
-                  </div>
+                  <ToolCalls tools={msg.tools} running={isRunning && isLast} />
                 )}
                 <div
                   className={cn(
-                    "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                    "min-w-0 max-w-full break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed [overflow-wrap:anywhere]",
                     isUser && "whitespace-pre-wrap",
                     isUser
                       ? "rounded-br-md bg-primary text-primary-foreground"
