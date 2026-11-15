@@ -221,7 +221,7 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
             <DrawerTitle>Agent settings</DrawerTitle>
             <DrawerDescription>Edit agent info and the selected node.</DrawerDescription>
           </DrawerHeader>
-          <div className="space-y-6 overflow-y-auto px-4 pb-6">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 pb-6">
             <div className="space-y-3">
               <h2 className="text-sm font-medium">Agent info</h2>
               <div className="space-y-2">
@@ -264,6 +264,17 @@ export function AgentBuilder({ agent }: AgentBuilderProps) {
               </div>
             </div>
             <NodeSettingsPanel />
+          </div>
+
+          {/* The header Save button is hidden behind this drawer, so it gets its own here. */}
+          <div className="flex items-center justify-between gap-3 border-t border-border bg-background p-4">
+            <p className="text-xs text-muted-foreground">
+              {hasUnsavedChanges ? "You have unsaved changes" : "All changes saved"}
+            </p>
+            <Button onClick={handleSave} disabled={saveAgent.isPending || !hasUnsavedChanges}>
+              {saveAgent.isPending ? <Spinner /> : <HugeiconsIcon icon={FloppyDiskIcon} strokeWidth={2} />}
+              {saveAgent.isPending ? "Saving..." : "Save"}
+            </Button>
           </div>
         </DrawerContent>
       </Drawer>
