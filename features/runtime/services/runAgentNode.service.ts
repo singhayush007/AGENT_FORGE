@@ -8,6 +8,7 @@ import {
   type BaseMessage,
 } from "@langchain/core/messages";
 import type { AgentNodeConfig } from "@/shared/types/workflow.types";
+import { buildLimitFallback } from "@/features/runtime/util/limitFallback.utils";
 import { compactToolOutputs } from "@/features/runtime/util/compactMessages.utils";
 import { githubDefaultsNote } from "@/features/tools/services/github/githubClient.service";
 import { getToolsForAgent } from "@/features/tools/services/registry.service";
@@ -67,6 +68,8 @@ export async function runAgentNode({
   let toolCallCount = 0;
   // Once the tool limit is hit we stop offering tools and let the model answer with what it has.
   let limitReached = false;
+  const NO_TOOLS_NOTE =
+    "You have used all allowed tool calls. Do NOT call any tool. Write the final answer now from what you already found, and say what you could not check.";
   let finalText = "";
 
   while (true) {
@@ -93,6 +96,17 @@ export async function runAgentNode({
         break;
       } catch (err) {
         const msg = err instanceof Error ? err.message.toLowerCase() : "";
+
+        // Told to stop using tools, the model sometimes still tries ("Tool choice is none, but model
+        // called a tool"). Ask again, and if it keeps happening hand back what the tools found.
+        if (limitReached && msg.includes("tool choice is none")) {
+          response = undefined;
+          if (attempt < 2) {
+            messages.push(new HumanMessage(NO_TOOLS_NOTE));
+            continue;
+          }
+          return finalText || buildLimitFallback(messages);
+        }
 
         // "Request too large" (HTTP 413): shrink older tool output a lot and try again.
         const tooLarge = (err as { status?: number }).status === 413 || msg.includes("request too large");
@@ -187,5 +201,8 @@ export async function runAgentNode({
         })
       );
     }
+
+    // The limit was hit inside this batch: say clearly that the next reply must be text only.
+    if (limitReached) messages.push(new HumanMessage(NO_TOOLS_NOTE));
   }
 }

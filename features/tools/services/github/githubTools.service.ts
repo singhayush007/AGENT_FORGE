@@ -76,6 +76,11 @@ export function createGithubTools(token: string | null, defaults: GithubDefaults
         url: item.html_url,
       }));
 
+      if (items.length === 0) {
+        // An empty "[]" makes the model repeat the same search. Tell it what to do instead.
+        return `No code search results for "${query}" in ${repoInfo.owner}/${repoInfo.repo}. GitHub's code search can lag behind new or recently changed repositories. Do not repeat this search. Browse instead: call github_read_file with an empty path to list the root folder, then open the files you need.`;
+      }
+
       return JSON.stringify(items);
     },
     {
