@@ -18,6 +18,10 @@ describe("toFriendlyError", () => {
     expect(toFriendlyError(err("boom", { status: 503 }))).toMatch(/provider had a problem/i);
   });
 
+  it("explains a request that is too large for the model", () => {
+    expect(toFriendlyError(err("Request too large for model ... TPM", { status: 413 }))).toMatch(/too large/i);
+  });
+
   it("recognises timeouts, network failures and bad tool calls", () => {
     expect(toFriendlyError(err("x", { name: "TimeoutError" }))).toMatch(/took too long/i);
     expect(toFriendlyError(new TypeError("fetch failed"))).toMatch(/could not reach/i);

@@ -19,6 +19,9 @@ export function toFriendlyError(err: unknown): string {
   if (status === 429 || msg.includes("rate limit") || msg.includes("rate_limit")) {
     return "The AI provider is rate-limiting requests. Wait a few seconds and try again.";
   }
+  if (status === 413 || msg.includes("request too large") || msg.includes("reduce your message size")) {
+    return "That request got too large for the model's limit. Ask something more specific (for example name the file or folder).";
+  }
   if (msg.includes("model_not_found") || (status === 404 && msg.includes("model"))) {
     return "That model is not available on your AI provider. Pick another model in the agent settings.";
   }

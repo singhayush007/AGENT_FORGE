@@ -8,6 +8,7 @@ import {
   type BaseMessage,
 } from "@langchain/core/messages";
 import type { AgentNodeConfig } from "@/shared/types/workflow.types";
+import { compactToolOutputs } from "@/features/runtime/util/compactMessages.utils";
 import { githubDefaultsNote } from "@/features/tools/services/github/githubClient.service";
 import { getToolsForAgent } from "@/features/tools/services/registry.service";
 import type { RunEvent } from "@/features/runtime/services/runAgent.service";
@@ -73,6 +74,9 @@ export async function runAgentNode({
     // Each chunk is a small piece; we join them into one full message.
     let response: AIMessageChunk | undefined;
 
+    // Keep the request small: only the latest tool outputs stay in full.
+    compactToolOutputs(messages, 2, 800);
+
     // Some models (notably open ones on free tiers) occasionally invent a tool name or emit a
     // malformed tool call. The provider rejects that with an error. We remind the model of the
     // real tool names and try again instead of failing the whole run.
@@ -89,6 +93,14 @@ export async function runAgentNode({
         break;
       } catch (err) {
         const msg = err instanceof Error ? err.message.toLowerCase() : "";
+
+        // "Request too large" (HTTP 413): shrink older tool output a lot and try again.
+        const tooLarge = (err as { status?: number }).status === 413 || msg.includes("request too large");
+        if (tooLarge && attempt < 2) {
+          response = undefined;
+          compactToolOutputs(messages, 1, 300);
+          continue;
+        }
 
         // Rate limit with a short wait ("try again in 8.4s"): wait it out and retry quietly.
         // Free tiers hit this often, and a few seconds of waiting beats a failed run.
