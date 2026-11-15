@@ -8,6 +8,7 @@ import {
   type BaseMessage,
 } from "@langchain/core/messages";
 import type { AgentNodeConfig } from "@/shared/types/workflow.types";
+import { githubDefaultsNote } from "@/features/tools/services/github/githubClient.service";
 import { getToolsForAgent } from "@/features/tools/services/registry.service";
 import type { RunEvent } from "@/features/runtime/services/runAgent.service";
 
@@ -48,10 +49,14 @@ export async function runAgentNode({
       : undefined,
   });
 
+  const hasGithubTools = tools.some((t) => t.name.startsWith("github_"));
+  const githubNote = hasGithubTools ? githubDefaultsNote(config.github) : "";
+  const systemPrompt = githubNote ? `${config.instructions}\n\n${githubNote}` : config.instructions;
+
   const modelWithTools = tools.length > 0 ? model.bindTools(tools) : model;
 
   const messages: BaseMessage[] = [
-    new SystemMessage(config.instructions),
+    new SystemMessage(systemPrompt),
     ...history.map((m) =>
       m.role === "user" ? new HumanMessage(m.content) : new AIMessage(m.content)
     ),

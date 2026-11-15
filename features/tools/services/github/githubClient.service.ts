@@ -43,12 +43,41 @@ export function parsePrInput(input: string) {
   return { pullNumber: input };
 }
 
+// Accepts "https://github.com/owner/repo(.git)", "owner/repo", or just "repo".
+function parseRepoInput(value: string) {
+  const v = value.trim().replace(/\.git$/i, "");
+  const m =
+    v.match(/github\.com[/:]([^/\s]+)\/([^/\s?#]+)/i) ?? v.match(/^([^/\s]+)\/([^/\s]+)$/);
+  return m ? { owner: m[1], repo: m[2] } : null;
+}
+
 export function resolveRepo(
   args: { owner?: string; repo?: string },
   defaults: GithubDefaults
 ) {
+  const rawRepo = (args.repo || defaults.repo || "").trim();
+  const parsed = parseRepoInput(rawRepo);
+
   return {
-    owner: args.owner || defaults.owner || "",
-    repo: args.repo || defaults.repo || "",
+    owner: args.owner || parsed?.owner || defaults.owner || "",
+    repo: parsed?.repo ?? rawRepo,
   };
+}
+
+// The tools fall back to the saved defaults when the model leaves owner/repo out, but the model
+// cannot see those defaults. This tells it, so "my repo" / "this repo" just works.
+export function githubDefaultsNote(defaults: GithubDefaults | undefined) {
+  if (!defaults) return "";
+  const { owner, repo } = resolveRepo({}, defaults);
+  const lines: string[] = [];
+
+  if (owner && repo) {
+    lines.push(
+      `Default GitHub repository: ${owner}/${repo}. When the user says "my repo", "this repo" or does not name a repository, use it. You may leave owner and repo out of GitHub tool calls to use this default.`
+    );
+  }
+  if (defaults.defaultPrNumber) {
+    lines.push(`Default pull request: ${defaults.defaultPrNumber}.`);
+  }
+  return lines.join("\n");
 }
