@@ -22,6 +22,9 @@ function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
 }
 
+// Vercel: allow long-running streamed agent runs (the default serverless timeout is too short).
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return jsonError("Your session expired. Please sign in again.", 401);

@@ -66,6 +66,9 @@ function sanitize(definition: BuilderDefinition): BuilderDefinition {
   };
 }
 
+// Vercel: allow long-running streamed agent runs (the default serverless timeout is too short).
+export const maxDuration = 60;
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ shareId: string }> }

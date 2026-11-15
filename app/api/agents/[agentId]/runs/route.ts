@@ -177,6 +177,9 @@ async function handle(
   });
 }
 
+// Vercel: allow long-running streamed agent runs (the default serverless timeout is too short).
+export const maxDuration = 60;
+
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ agentId: string }> },
